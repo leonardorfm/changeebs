@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Feedbacks de Liderança</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        h1 {
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+        h2 {
+            margin-top: 30px;
+            font-size: 20px;
+        }
+        h3 {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+        .charts-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        .chart-wrapper {
+            flex: 1;
+            min-width: 300px;
+            max-width: 550px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+        }
+        .summary {
+            margin-top: 30px;
+            background-color: #f4f7fc;
+            padding: 20px;
+            border-radius: 8px;
+            line-height: 1.6;
+        }
+        .insights {
+            margin-top: 30px;
+        }
+        .insights ul {
+            padding-left: 20px;
+        }
+        .insights li {
+            margin-bottom: 10px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .color-box {
+            width: 12px;
+            height: 12px;
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+        .canvas-container {
+            position: relative;
+            height: 350px;
+        }
+        .filters {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f4f7fc;
+            border-radius: 8px;
+        }
+        .filters select {
+            padding: 8px 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+            min-width: 250px;
+        }
+        .filters select:focus {
+            outline: none;
+            border-color: #4e73df;
+            box-shadow: 0 0 0 2px rgba(78, 115, 223, 0.25);
+        }
+        .data-source-info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+        }
+        .country-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 4px;
+            margin-right: 8px;
+        }
+        .badge-brazil {
+            background-color: #c8e6c9;
+            color: #2e7d32;
+        }
+        .badge-usa {
+            background-color: #bbdefb;
+            color: #1565c0;
+        }
+        .hidden {
+            display: none;
+        }
+        .summary-data {
+            font-weight: bold;
+        }
+        .comparative-wrapper {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
+        }
+        .comparative-title {
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #2c3e50;
+        }
+        .comparative-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .comparative-item {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+        @media (max-width: 768px) {
+            .chart-wrapper {
+                min-width: 100%;
+            }
+            .comparative-item {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Análise de Feedbacks de Liderança</h1>
+        
+        <div class="filters">
+            <select id="dataSelector" onchange="updateView()">
+                <option value="brazil">Apenas Líderes do Brasil</option>
+                <option value="usa">Apenas Líderes dos EUA</option>
+                <option value="all">Todos os Líderes</option>
+            </select>
+            <div class="data-source-info" id="dataInfo">
+                Mostrando dados de <span class="country-badge badge-brazil">Brasil</span>
+                383 menções positivas | 66 menções negativas
+            </div>
+        </div>
+
+        <div id="brazil-summary" class="summary">
+            <p>Esta análise representa um total de <span class="summary-data">383 menções positivas</span> e <span class="summary-data">66 menções negativas</span> sobre líderes brasileiros, categorizadas em diferentes temas. Os gráficos abaixo mostram a distribuição percentual desses feedbacks, oferecendo insights sobre quais características são mais valorizadas e quais aspectos precisam de atenção.</p>
+        </div>
+
+        <div id="usa-summary" class="summary hidden">
+            <p>Esta análise representa um total de <span class="summary-data">49 menções positivas</span> e <span class="summary-data">4 menções negativas</span> sobre líderes americanos, categorizadas em diferentes temas. Os gráficos abaixo mostram a distribuição percentual desses feedbacks, oferecendo insights sobre quais características são mais valorizadas e quais aspectos precisam de atenção.</p>
+        </div>
+
+        <div id="all-summary" class="summary hidden">
+            <p>Esta análise comparativa representa um total de <span class="summary-data">432 menções positivas</span> e <span class="summary-data">70 menções negativas</span> sobre líderes brasileiros e americanos, categorizadas em diferentes temas. Os gráficos abaixo mostram a distribuição percentual desses feedbacks, permitindo uma comparação entre os padrões de liderança nos dois países.</p>
+        </div>
+
+        <!-- Gráficos para o Brasil -->
+        <div id="brazil-charts" class="charts-container">
+            <div class="chart-wrapper">
+                <h2>Temas Positivos - Brasil (383 menções)</h2>
+                <div class="canvas-container">
+                    <canvas id="brazilPositiveChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <h2>Temas Negativos - Brasil (66 menções)</h2>
+                <div class="canvas-container">
+                    <canvas id="brazilNegativeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos para os EUA -->
+        <div id="usa-charts" class="charts-container hidden">
+            <div class="chart-wrapper">
+                <h2>Temas Positivos - EUA (49 menções)</h2>
+                <div class="canvas-container">
+                    <canvas id="usaPositiveChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <h2>Temas Negativos - EUA (4 menções)</h2>
+                <div class="canvas-container">
+                    <canvas id="usaNegativeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Seção comparativa para "Todos" -->
+        <div id="all-charts" class="charts-container hidden">
+            <div class="chart-wrapper">
+                <h2>Temas Positivos - Comparativo</h2>
+                <div class="canvas-container">
+                    <canvas id="allPositiveChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <h2>Temas Negativos - Comparativo</h2>
+                <div class="canvas-container">
+                    <canvas id="allNegativeChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Insights para o Brasil -->
+        <div id="brazil-insights" class="insights">
+            <h2>Principais Insights - Brasil</h2>
+            <ul>
+                <li><strong>Competências mais valorizadas:</strong> Conhecimento técnico (18.28%), suporte à equipe (18.02%) e comunicação clara (16.97%) são os atributos mais apreciados em líderes brasileiros.</li>
+                <li><strong>Fator humano relevante:</strong> Empatia e criação de ambiente positivo (16.71%) aparecem como um aspecto altamente valorizado, quase no mesmo nível das competências técnicas.</li>
+                <li><strong>Principais déficits:</strong> Posicionamento estratégico (19.70%) e gestão de equipe (15.15%) são as principais áreas de melhoria identificadas.</li>
+                <li><strong>Desproporção positivo-negativo:</strong> A proporção de 5.8:1 entre feedbacks positivos e negativos sugere uma percepção predominantemente positiva da liderança brasileira avaliada.</li>
+            </ul>
+        </div>
+
+        <!-- Insights para os EUA -->
+        <div id="usa-insights" class="insights hidden">
+            <h2>Principais Insights - EUA</h2>
+            <ul>
+                <li><strong>Competências mais valorizadas:</strong> Liderança e desenvolvimento da equipe (22.45%), apoio e cuidado com a equipe (18.37%) e comunicação aberta (16.33%) são os atributos mais apreciados em líderes americanos.</li>
+                <li><strong>Visão estratégica:</strong> Pensamento de longo prazo (12.24%) aparece como um fator relevante, destacando a valorização de líderes com visão sistêmica.</li>
+                <li><strong>Principais déficits:</strong> Problemas de comunicação (50%) é a principal área de melhoria identificada, seguido por dificuldades com flexibilidade (25%) e delegação (25%).</li>
+                <li><strong>Desproporção positivo-negativo:</strong> A proporção de 12.25:1 entre feedbacks positivos e negativos sugere uma percepção extremamente positiva da liderança americana avaliada.</li>
+            </ul>
+        </div>
+
+        <!-- Insights comparativos -->
+        <div id="all-insights" class="insights hidden">
+            <h2>Análise Comparativa Brasil vs EUA</h2>
+            
+            <div class="comparative-wrapper">
+                <h3 class="comparative-title">Principais Semelhanças</h3>
+                <ul>
+                    <li><strong>Comunicação como pilar:</strong> Tanto no Brasil (16.97%) quanto nos EUA (16.33%), a comunicação clara e eficaz aparece como um dos três atributos mais valorizados em líderes.</li>
+                    <li><strong>Suporte à equipe:</strong> O apoio e disponibilidade para ajudar está entre os aspectos mais apreciados em ambos os países (Brasil: 18.02%, EUA: 18.37%).</li>
+                    <li><strong>Valorização predominante:</strong> Em ambos os países, os feedbacks positivos superam significativamente os negativos, indicando uma percepção geralmente positiva da liderança.</li>
+                </ul>
+            </div>
+            
+            <div class="comparative-wrapper">
+                <h3 class="comparative-title">Principais Diferenças</h3>
+                <ul>
+                    <li><strong>Valorização técnica vs. desenvolvimento:</strong> No Brasil, o conhecimento técnico (18.28%) é o atributo mais valorizado, enquanto nos EUA é a capacidade de desenvolver pessoas (22.45%).</li>
+                    <li><strong>Visão estratégica:</strong> Este aspecto aparece com maior destaque nos EUA (12.24%) do que no Brasil, onde o foco em resultados (8.36%) tem uma abordagem mais imediata.</li>
+                    <li><strong>Pontos de melhoria:</strong> No Brasil, questões de liderança estratégica (19.70%) são o principal ponto fraco identificado, enquanto nos EUA são problemas de comunicação (50%).</li>
+                    <li><strong>Proporção de feedbacks:</strong> Nos EUA, a proporção de feedbacks positivos vs. negativos (12.25:1) é significativamente maior que no Brasil (5.8:1).</li>
+                </ul>
+            </div>
+            
+            <div class="comparative-wrapper">
+                <h3 class="comparative-title">Implicações para Desenvolvimento de Liderança</h3>
+                <ul>
+                    <li><strong>Líderes brasileiros:</strong> Poderiam se beneficiar de desenvolvimento em habilidades estratégicas, visão de longo prazo e melhoria na distribuição de responsabilidades e desenvolvimento de equipe.</li>
+                    <li><strong>Líderes americanos:</strong> Poderiam aprimorar aspectos de comunicação detalhada, flexibilidade e delegação de tarefas.</li>
+                    <li><strong>Abordagem global:</strong> Programas de desenvolvimento de liderança podem se beneficiar de uma abordagem balanceada entre competência técnica (valorizada no Brasil) e desenvolvimento de pessoas (valorizada nos EUA).</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dados para os gráficos do Brasil
+        const brazilPositiveData = {
+            labels: [
+                'Conhecimento Técnico/Expertise (18.28%)',
+                'Suporte à Equipe/Disponibilidade (18.02%)',
+                'Comunicação Clara/Aberta (16.97%)',
+                'Empatia/Ambiente Positivo (16.71%)',
+                'Desenvolvimento de Pessoas (12.80%)',
+                'Foco em Resultados/Metas (8.36%)',
+                'Ética/Integridade (5.48%)',
+                'Outros Temas Positivos (3.39%)'
+            ],
+            datasets: [{
+                data: [18.28, 18.02, 16.97, 16.71, 12.80, 8.36, 5.48, 3.39],
+                backgroundColor: [
+                    '#0a5d21', // Verde muito escuro (maior %)
+                    '#0d6e28', // Verde escuro
+                    '#0e802e', // Verde médio-escuro
+                    '#13a93c', // Verde médio
+                    '#18d14a', // Verde médio-claro
+                    '#47dd70', // Verde claro
+                    '#7ee79c', // Verde muito claro
+                    '#aff0c3'  // Verde pálido (menor %)
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        const brazilNegativeData = {
+            labels: [
+                'Liderança Estratégica/Decisões (19.70%)',
+                'Temas Diversos (18.18%)',
+                'Gestão de Equipe/Desenvolvimento (15.15%)',
+                'Falhas de Comunicação (13.64%)',
+                'Ambiente/Relacionamento Negativo (13.64%)',
+                'Falta de Profundidade Técnica (10.61%)',
+                'Problemas com Delegação/Autonomia (9.09%)'
+            ],
+            datasets: [{
+                data: [19.70, 18.18, 15.15, 13.64, 13.64, 10.61, 9.09],
+                backgroundColor: [
+                    '#5d0a0a', // Vermelho muito escuro (maior %)
+                    '#6e0d0d', // Vermelho escuro
+                    '#800e0e', // Vermelho médio-escuro
+                    '#a91313', // Vermelho médio
+                    '#d11818', // Vermelho médio-claro
+                    '#dd4747', // Vermelho claro
+                    '#e77e7e'  // Vermelho muito claro (menor %)
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        // Dados para os gráficos dos EUA
+        const usaPositiveData = {
+            labels: [
+                'Liderança e Desenvolvimento da Equipe (22.45%)',
+                'Apoio e Cuidado com a Equipe (18.37%)',
+                'Comunicação Aberta e Direta (16.33%)',
+                'Visão Estratégica/Pensamento de Longo Prazo (12.24%)',
+                'Reconhecimento e Apreciação (6.12%)',
+                'Abertura e Acessibilidade (6.12%)',
+                'Busca por Melhorias e Crescimento (4.08%)',
+                'Profissionalismo e Imparcialidade (4.08%)',
+                'Outros Temas Positivos (10.20%)'
+            ],
+            datasets: [{
+                data: [22.45, 18.37, 16.33, 12.24, 6.12, 6.12, 4.08, 4.08, 10.20],
+                backgroundColor: [
+                    '#0a5d21', // Verde muito escuro (maior %)
+                    '#0d6e28', // Verde escuro
+                    '#0e802e', // Verde médio-escuro
+                    '#13a93c', // Verde médio
+                    '#18d14a', // Verde médio-claro
+                    '#47dd70', // Verde claro
+                    '#7ee79c', // Verde mais claro
+                    '#aff0c3', // Verde pálido
+                    '#d7f6e3'  // Verde muito pálido (menor %)
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        const usaNegativeData = {
+            labels: [
+                'Problemas de Comunicação (50.00%)',
+                'Dificuldade com Flexibilidade/Rigidez (25.00%)',
+                'Dificuldade em Delegar (25.00%)'
+            ],
+            datasets: [{
+                data: [50.00, 25.00, 25.00],
+                backgroundColor: [
+                    '#5d0a0a', // Vermelho muito escuro (maior %)
+                    '#800e0e', // Vermelho médio-escuro
+                    '#a91313', // Vermelho médio
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        // Dados para os gráficos comparativos
+        const allPositiveLabels = [
+            'Conhecimento Técnico/Expertise',
+            'Suporte à Equipe/Disponibilidade',
+            'Comunicação Clara/Aberta',
+            'Empatia/Ambiente Positivo',
+            'Desenvolvimento de Pessoas',
+            'Visão Estratégica/Longo Prazo',
+            'Foco em Resultados/Metas',
+            'Ética/Integridade/Profissionalismo',
+            'Reconhecimento e Apreciação',
+            'Abertura e Acessibilidade',
+            'Outros Temas Positivos'
+        ];
+
+        const allPositiveData = {
+            labels: allPositiveLabels,
+            datasets: [
+                {
+                    label: 'Brasil',
+                    data: [18.28, 18.02, 16.97, 16.71, 12.80, 0, 8.36, 5.48, 0, 0, 3.39],
+                    backgroundColor: '#0e802e',
+                    borderColor: '#0a5d21',
+                    borderWidth: 1
+                },
+                {
+                    label: 'EUA',
+                    data: [0, 18.37, 16.33, 0, 22.45, 12.24, 0, 4.08, 6.12, 6.12, 14.28],
+                    backgroundColor: '#13a93c',
+                    borderColor: '#0d6e28',
+                    borderWidth: 1
+                }
+            ]
+        };
+
+        const allNegativeLabels = [
+            'Liderança Estratégica/Decisões',
+            'Gestão de Equipe/Desenvolvimento',
+            'Falhas de Comunicação',
+            'Ambiente/Relacionamento Negativo',
+            'Falta de Profundidade Técnica',
+            'Problemas com Delegação/Autonomia',
+            'Dificuldade com Flexibilidade/Rigidez',
+            'Temas Diversos'
+        ];
+
+        const allNegativeData = {
+            labels: allNegativeLabels,
+            datasets: [
+                {
+                    label: 'Brasil',
+                    data: [19.70, 15.15, 13.64, 13.64, 10.61, 9.09, 0, 18.18],
+                    backgroundColor: '#800e0e',
+                    borderColor: '#5d0a0a',
+                    borderWidth: 1
+                },
+                {
+                    label: 'EUA',
+                    data: [0, 0, 50.00, 0, 0, 25.00, 25.00, 0],
+                    backgroundColor: '#a91313',
+                    borderColor: '#800e0e',
+                    borderWidth: 1
+                }
+            ]
+        };
+
+        // Opções para os gráficos de pizza
+        const pieOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            return `${label.split('(')[0]}: ${value}%`;
+                        }
+                    }
+                }
+            }
+        };
+
+        // Opções para os gráficos de barra
+        const barOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            indexAxis: 'y',
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.parsed.x || 0;
+                            return `${label}: ${value}%`;
+                        }
+                    }
+                }
+            }
+        };
+
+        // Inicializar os gráficos
+        let brazilPositiveChart, brazilNegativeChart, usaPositiveChart, usaNegativeChart;
+        let allPositiveChart, allNegativeChart;
+
+        // Função para mostrar/esconder seções com base na seleção
+        function updateView() {
+            const selection = document.getElementById('dataSelector').value;
+            const sections = ['brazil', 'usa', 'all'];
+            
+            // Atualizar o badge e info
+            const dataInfo = document.getElementById('dataInfo');
+            
+            if (selection === 'brazil') {
+                dataInfo.innerHTML = 'Mostrando dados de <span class="country-badge badge-brazil">Brasil</span> 383 menções positivas | 66 menções negativas';
+            } else if (selection === 'usa') {
+                dataInfo.innerHTML = 'Mostrando dados de <span class="country-badge badge-usa">EUA</span> 49 menções positivas | 4 menções negativas';
+            } else {
+                dataInfo.innerHTML = 'Mostrando dados de <span class="country-badge badge-brazil">Brasil</span> <span class="country-badge badge-usa">EUA</span> 432 menções positivas | 70 menções negativas';
+            }
+            
+            // Mostrar/esconder as seções
+            sections.forEach(section => {
+                const chartsSection = document.getElementById(`${section}-charts`);
+                const summarySection = document.getElementById(`${section}-summary`);
+                const insightsSection = document.getElementById(`${section}-insights`);
+                
+                if (section === selection) {
+                    chartsSection.classList.remove('hidden');
+                    summarySection.classList.remove('hidden');
+                    insightsSection.classList.remove('hidden');
+                } else {
+                    chartsSection.classList.add('hidden');
+                    summarySection.classList.add('hidden');
+                    insightsSection.classList.add('hidden');
+                }
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', (event) => {
+            // Inicializar gráficos do Brasil
+            const ctxBrazilPositive = document.getElementById('brazilPositiveChart').getContext('2d');
+            brazilPositiveChart = new Chart(ctxBrazilPositive, {
+                type: 'pie',
+                data: brazilPositiveData,
+                options: pieOptions
+            });
+
+            const ctxBrazilNegative = document.getElementById('brazilNegativeChart').getContext('2d');
+            brazilNegativeChart = new Chart(ctxBrazilNegative, {
+                type: 'pie',
+                data: brazilNegativeData,
+                options: pieOptions
+            });
+
+            // Inicializar gráficos dos EUA
+            const ctxUsaPositive = document.getElementById('usaPositiveChart').getContext('2d');
+            usaPositiveChart = new Chart(ctxUsaPositive, {
+                type: 'pie',
+                data: usaPositiveData,
+                options: pieOptions
+            });
+
+            const ctxUsaNegative = document.getElementById('usaNegativeChart').getContext('2d');
+            usaNegativeChart = new Chart(ctxUsaNegative, {
+                type: 'pie',
+                data: usaNegativeData,
+                options: pieOptions
+            });
+
+            // Inicializar gráficos comparativos
+            const ctxAllPositive = document.getElementById('allPositiveChart').getContext('2d');
+            allPositiveChart = new Chart(ctxAllPositive, {
+                type: 'bar',
+                data: allPositiveData,
+                options: barOptions
+            });
+
+            const ctxAllNegative = document.getElementById('allNegativeChart').getContext('2d');
+            allNegativeChart = new Chart(ctxAllNegative, {
+                type: 'bar',
+                data: allNegativeData,
+                options: barOptions
+            });
+
+            // Definir visualização inicial
+            updateView();
+        });
+    </script>
+</body>
+</html>
